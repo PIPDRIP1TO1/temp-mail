@@ -1,6 +1,6 @@
-const API = 'https://api.mail.tm';
-const ACTIVE_KEY = 'temp-mail-active-v1';
-const SAVED_KEY = 'temp-mail-saved-v1';
+const API = 'https://zoromail.com/api/v1';
+const ACTIVE_KEY = 'temp-mail-active-v2';
+const SAVED_KEY = 'temp-mail-saved-v2';
 const $ = (id) => document.getElementById(id);
 let current = null;
 let messages = [];
@@ -17,14 +17,14 @@ function toast(message) { const el = $('toast'); el.textContent = message; el.cl
 function error(message) { $('error-text').textContent = message; $('error-box').hidden = false; }
 function clearError() { $('error-box').hidden = true; }
 function setBusy(value) { busy = value; $('new-btn').disabled = value; $('refresh-btn').disabled = value || !current; $('copy-btn').disabled = value || !current; $('save-btn').disabled = value || !current; }
-function renderAddress() { $('address').textContent = current?.address || 'Creating your inbox…'; $('status-line').textContent = current ? 'Inbox refreshes automatically every 8 seconds' : 'Connecting to the mail service…'; setBusy(busy); }
+function renderAddress() { $('address').textContent = current?.address || 'Creating your inbox…'; $('status-line').textContent = current ? 'Inbox refreshes automatically every 20 seconds' : 'Connecting to the mail service…'; setBusy(busy); }
 async function api(path, options = {}) {
-  const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(current?.token ? { Authorization: `Bearer ${current.token}` } : {}) };
+  const headers = { Accept: 'application/json', ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(path.startsWith('/messages') && current?.token ? { Authorization: `Bearer ${current.token}` } : {}) };
   let response;
   try { response = await fetch(API + path, { ...options, headers: { ...headers, ...options.headers } }); }
-  catch { throw new Error('Could not connect to Mail.tm. Check your connection and try again.'); }
+  catch { throw new Error('Could not connect to ZoroMail. Check your connection and try again.'); }
   if (!response.ok) {
-    let detail = ''; try { const body = await response.json(); detail = body.detail || body.message || ''; } catch {}
+    let detail = ''; try { const body = await response.json(); detail = body.error || body.detail || body.message || ''; } catch {}
     throw new Error(response.status === 429 ? 'Mail service is busy. Please try again shortly.' : detail || `Mail service returned ${response.status}.`);
   }
   return response.status === 204 ? null : response.json();
@@ -35,16 +35,16 @@ async function newMailbox() {
   setBusy(true); clearError(); $('status-line').textContent = 'Creating your inbox…';
   try {
     const domains = await api('/domains');
-    const domain = (domains['hydra:member'] || domains.member || []).find(d => d.isActive !== false && d.isPrivate !== true)?.domain;
+    const domain = (Array.isArray(domains) ? domains : []).find(d => d.isActive !== false)?.domain;
     if (!domain) throw new Error('No public mail domain is available right now.');
     let box;
     for (let i = 0; i < 3; i++) {
-      const address = `${randomString(8)}.${randomString(4)}@${domain}`;
+      const address = `${randomString(12)}@${domain}`;
       const password = randomString(32);
-      try { await api('/accounts', { method: 'POST', body: JSON.stringify({ address, password }), headers: { Authorization: '' } }); box = { address, password }; break; }
+      try { await api('/accounts', { method: 'POST', body: JSON.stringify({ address, password }) }); box = { address, password }; break; }
       catch (e) { if (i === 2) throw e; }
     }
-    const token = await api('/token', { method: 'POST', body: JSON.stringify(box), headers: { Authorization: '' } });
+    const token = await api('/token', { method: 'POST', body: JSON.stringify(box) });
     current = { ...box, token: token.token, id: token.id };
     saveActive(); messages = []; selectedId = null; renderMessages(); renderDetail(); clearError(); toast('New inbox ready');
     await refreshInbox(true);
@@ -55,7 +55,7 @@ async function refreshInbox(silent = false) {
   if (!current) return;
   try {
     const data = await api('/messages');
-    const next = data['hydra:member'] || data.member || [];
+    const next = data.messages || [];
     const previousIds = new Set(messages.map(m => m.id));
     messages = next; renderMessages(); clearError();
     if (!silent && next.some(m => !previousIds.has(m.id))) toast('New message received');
@@ -69,7 +69,8 @@ function renderMessages() {
     const item = document.createElement('button'); item.type = 'button'; item.className = `message-item${m.id === selectedId ? ' active' : ''}${m.seen ? '' : ' unread'}`;
     const top = document.createElement('div'); top.className = 'message-top';
     const from = document.createElement('strong'); from.textContent = m.from?.name || m.from?.address || 'Unknown sender';
-    const time = document.createElement('time'); time.dateTime = m.createdAt || ''; time.textContent = m.createdAt ? new Date(m.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+    const received = m.receivedAt || m.createdAt;
+    const time = document.createElement('time'); time.dateTime = received || ''; time.textContent = received ? new Date(received).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
     top.append(from, time);
     const subject = document.createElement('div'); subject.className = 'message-subject'; subject.textContent = m.subject || '(No subject)';
     const intro = document.createElement('div'); intro.className = 'message-intro'; intro.textContent = m.intro || '';
@@ -83,7 +84,7 @@ function renderDetail(message) {
   const title = document.createElement('h2'); title.textContent = message.subject || '(No subject)';
   const meta = document.createElement('div'); meta.className = 'detail-meta';
   const from = document.createElement('div'); const fromLabel = document.createElement('strong'); fromLabel.textContent = 'From: '; from.append(fromLabel, document.createTextNode(`${message.from?.name ? `${message.from.name} ` : ''}<${message.from?.address || 'unknown'}>`));
-  const date = document.createElement('div'); const dateLabel = document.createElement('strong'); dateLabel.textContent = 'Date: '; date.append(dateLabel, document.createTextNode(message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Unknown'));
+  const date = document.createElement('div'); const dateLabel = document.createElement('strong'); dateLabel.textContent = 'Date: '; date.append(dateLabel, document.createTextNode(message.receivedAt || message.createdAt ? new Date(message.receivedAt || message.createdAt).toLocaleString() : 'Unknown'));
   meta.append(from, date);
   const body = document.createElement('div'); body.className = 'detail-body'; body.textContent = message.text || (Array.isArray(message.html) && message.html.length ? 'This message contains HTML only. Plain text is unavailable.' : 'This message has no text.');
   wrap.append(title, meta, body);
@@ -121,4 +122,4 @@ $('retry-btn').addEventListener('click', () => current ? refreshInbox() : newMai
 current = readJson(sessionStorage, ACTIVE_KEY, null);
 if (current?.address && current?.token) { renderAddress(); refreshInbox(); }
 else { current = null; newMailbox(); }
-setInterval(() => { if (current && !document.hidden) refreshInbox(true); }, 8000);
+setInterval(() => { if (current && !document.hidden) refreshInbox(true); }, 20000);
