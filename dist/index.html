@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050b0e">
+  <meta name="description" content="Create a disposable email address and read incoming messages in one clean inbox.">
+  <title>Temp Mail — Disposable Mail</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon-defs" aria-hidden="true">
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7 7 0 0 1 18 7l2 5M4 12l2 5a7 7 0 0 0 12.5-2"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="m4 20 12-12 4 4L8 24M15 9l-2-2M4 5l1 2M10 2l.5 2M20 2l-1 2M21 18l-2-.5"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 .3l2-2a5 5 0 0 0-7-7l-1.2 1.2M14 11a5 5 0 0 0-7-.3l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 4h16l2 10v6H2v-6L4 4Z"/><path d="M2 14h6l2 3h4l2-3h6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5 19 19M19 5 5 19"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></symbol>
+  </svg>
+
+  <header class="topbar"><div class="brand"><span class="brand-mark"><svg><use href="#i-mail"/></svg></span><span>Disposable Mail</span></div></header>
+
+  <main class="page">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-mark"><svg><use href="#i-mail"/></svg></div>
+      <h1 id="page-title">Temp Mail</h1>
+      <p>A private inbox in seconds</p>
+    </section>
+
+    <section class="address-card" aria-label="Temporary email address">
+      <div class="address-content">
+        <div class="eyebrow">YOUR TEMPORARY EMAIL</div>
+        <div class="address-row">
+          <div class="address-field"><svg><use href="#i-mail"/></svg><span id="address" class="address-text" aria-live="polite">Creating your inbox…</span></div>
+          <button id="copy-btn" class="copy-button" type="button" disabled><svg><use href="#i-copy"/></svg><span>Copy address</span></button>
+        </div>
+        <p id="status-line" class="status-line">Connecting to the mail service…</p>
+      </div>
+      <div class="actions">
+        <button id="refresh-btn" type="button" disabled><svg><use href="#i-refresh"/></svg>Refresh</button>
+        <button id="new-btn" type="button"><svg><use href="#i-wand"/></svg>New email</button>
+        <button id="save-btn" type="button" disabled><svg><use href="#i-link"/></svg>Save mailbox</button>
+      </div>
+    </section>
+
+    <div id="error-box" class="error-box" role="alert" hidden><svg><use href="#i-alert"/></svg><span id="error-text"></span><button id="retry-btn" type="button">Retry</button></div>
+
+    <section class="inbox-shell" aria-label="Inbox">
+      <div class="message-list-panel">
+        <div class="panel-heading"><span><svg><use href="#i-inbox"/></svg>Inbox</span><span id="message-count">0 messages</span></div>
+        <div id="message-list" class="message-list"><div class="empty-list"><div class="empty-icon"><svg><use href="#i-inbox"/></svg></div><strong>No messages yet</strong><span>Waiting for incoming mail...</span></div></div>
+      </div>
+      <div id="message-detail" class="message-detail"><div class="empty-detail"><svg><use href="#i-mail"/></svg><span>Select a message to read</span></div></div>
+    </section>
+
+    <footer class="features">
+      <div><svg><use href="#i-inbox"/></svg><section><strong>Fresh addresses</strong><p>Create a new inbox whenever you need one.</p></section></div>
+      <div><svg><use href="#i-clock"/></svg><section><strong>Auto refresh</strong><p>New messages appear automatically.</p></section></div>
+      <div><svg><use href="#i-code"/></svg><section><strong>Powered by Mail.tm</strong><p>Live disposable email via <a href="https://mail.tm" target="_blank" rel="noopener noreferrer">Mail.tm</a>.</p></section></div>
+    </footer>
+  </main>
+
+  <dialog id="saved-dialog" class="saved-dialog">
+    <div class="dialog-head"><div><h2>Saved mailboxes</h2><p>Stored in this browser on this device.</p></div><button id="close-dialog" class="icon-button" type="button" aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <div id="saved-list" class="saved-list"></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
